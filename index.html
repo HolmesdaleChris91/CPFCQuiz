@@ -799,7 +799,7 @@
     } else {
       btn.classList.add('wrong');
       document.querySelectorAll('#gw-options .opt-btn').forEach(b => {
-        if (b.onclick.toString().includes('true')) b.classList.add('reveal');
+        if (b.textContent.trim() === 'Andy Johnson') b.classList.add('reveal');
       });
       document.getElementById('gw-img').classList.add('revealed');
       document.getElementById('gw-overlay').style.display = 'none';
