@@ -759,7 +759,7 @@
   function pick(btn, chosen, correct, p) {
     if (answered) return;
     answered = true;
-    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+    document.querySelectorAll('#options .opt-btn').forEach(b => b.disabled = true);
 
     if (chosen === correct) {
       score++;
@@ -768,7 +768,7 @@
       document.getElementById('feedback').className = 'feedback ok';
     } else {
       btn.classList.add('wrong');
-      document.querySelectorAll('.opt-btn').forEach(b => {
+      document.querySelectorAll('#options .opt-btn').forEach(b => {
         if (b.textContent.trim() === correct) b.classList.add('reveal');
       });
       document.getElementById('feedback').innerHTML = `Not quite — ${p.name} represents ${correct} ${flagImg(correct, 32)}`;
