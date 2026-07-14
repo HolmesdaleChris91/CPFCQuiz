@@ -625,6 +625,7 @@
   <button onclick="showPage('goat', this)">GOAT Wheel</button>
   <button onclick="showPage('clubgoals', this)">Club Goals</button>
   <button onclick="showPage('argeng', this)">Arg vs Eng</button>
+  <button onclick="showPage('fravsesp', this)">Fra vs Esp</button>
 </nav>
 
 <main>
@@ -879,6 +880,42 @@
         <div class="verdict" id="ae-verdict" style="margin-bottom:8px"></div>
         <div style="font-size:14px;color:var(--text2);margin-bottom:20px" id="ae-verdict-sub"></div>
         <button class="replay-btn" onclick="resetAEMatch()">Rematch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRANCE VS SPAIN PAGE -->
+  <div class="page" id="page-fravsesp">
+    <div class="section-title" style="margin-top:4px">2026 World Cup Final Decider</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">Simulate the ultimate showdown — who's coming home with the trophy?</div>
+
+    <div class="vs-wrap">
+      <div class="vs-team">
+        <img class="vs-flag" src="https://flagcdn.com/w160/fr.png" alt="France">
+        <div class="vs-name">France</div>
+      </div>
+      <div class="vs-versus">VS</div>
+      <div class="vs-team">
+        <img class="vs-flag" src="https://flagcdn.com/w160/es.png" alt="Spain">
+        <div class="vs-name">Spain</div>
+      </div>
+    </div>
+
+    <div id="fe-pitch">
+      <div class="match-clock" id="fe-clock">Kick-off awaits…</div>
+      <div class="vs-score" id="fe-score">0 – 0</div>
+      <div class="event-log" id="fe-log"></div>
+      <div style="text-align:center">
+        <button class="spin-btn" id="fe-kickoff-btn" onclick="startFEMatch()">KICK OFF</button>
+      </div>
+    </div>
+
+    <div id="fe-final" style="display:none">
+      <div class="score-card" style="padding-top:0.5rem">
+        <div style="font-size:64px;margin-bottom:6px;">🏆</div>
+        <div class="verdict" id="fe-verdict" style="margin-bottom:8px"></div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:20px" id="fe-verdict-sub"></div>
+        <button class="replay-btn" onclick="resetFEMatch()">Rematch</button>
       </div>
     </div>
   </div>
@@ -1271,6 +1308,140 @@
     document.getElementById('ae-score').textContent = '0 – 0';
     document.getElementById('ae-clock').textContent = 'Kick-off awaits…';
     const btn = document.getElementById('ae-kickoff-btn');
+    btn.disabled = false;
+    btn.style.display = 'inline-block';
+  }
+
+  // France vs Spain decider
+  const feScorersFra = ["Mbappé", "Dembélé", "Barcola", "Kolo Muani", "Griezmann"];
+  const feScorersEsp = ["Yamal", "Pedri", "Morata", "Williams", "Olmo"];
+  const feFlagFra = '<img src="https://flagcdn.com/w40/fr.png" class="flag-img-inline" alt="France">';
+  const feFlagEsp = '<img src="https://flagcdn.com/w40/es.png" class="flag-img-inline" alt="Spain">';
+  let feTimer = null;
+  let feMinute = 0;
+  let feScoreFra = 0;
+  let feScoreEsp = 0;
+  let feEvents = [];
+
+  function feRandomGoalCount() {
+    const r = Math.random();
+    if (r < 0.15) return 0;
+    if (r < 0.55) return 1;
+    if (r < 0.85) return 2;
+    if (r < 0.97) return 3;
+    return 4;
+  }
+
+  function buildFEEvents() {
+    const events = [];
+    const fraGoals = feRandomGoalCount();
+    const espGoals = feRandomGoalCount();
+    const usedMinutes = new Set();
+    function pickMinute() {
+      let m;
+      do { m = 1 + Math.floor(Math.random() * 90); } while (usedMinutes.has(m));
+      usedMinutes.add(m);
+      return m;
+    }
+    for (let i = 0; i < fraGoals; i++) {
+      events.push({ minute: pickMinute(), team: 'France', scorer: feScorersFra[Math.floor(Math.random() * feScorersFra.length)] });
+    }
+    for (let i = 0; i < espGoals; i++) {
+      events.push({ minute: pickMinute(), team: 'Spain', scorer: feScorersEsp[Math.floor(Math.random() * feScorersEsp.length)] });
+    }
+    events.sort((a, b) => a.minute - b.minute);
+    return events;
+  }
+
+  function startFEMatch() {
+    document.getElementById('fe-kickoff-btn').disabled = true;
+    document.getElementById('fe-kickoff-btn').style.display = 'none';
+    document.getElementById('fe-log').innerHTML = '';
+    feMinute = 0; feScoreFra = 0; feScoreEsp = 0;
+    feEvents = buildFEEvents();
+    document.getElementById('fe-score').textContent = '0 – 0';
+    document.getElementById('fe-clock').textContent = "Kick-off! 0'";
+
+    const tickMs = 65; // ~5.9s to cover 90 minutes
+    feTimer = setInterval(() => {
+      feMinute++;
+      document.getElementById('fe-clock').textContent = `${feMinute}'`;
+      const goal = feEvents.find(e => e.minute === feMinute);
+      if (goal) {
+        if (goal.team === 'France') feScoreFra++; else feScoreEsp++;
+        document.getElementById('fe-score').textContent = `${feScoreFra} – ${feScoreEsp}`;
+        const row = document.createElement('div');
+        row.className = 'event-row';
+        const flag = goal.team === 'France' ? feFlagFra : feFlagEsp;
+        row.innerHTML = `<span class="event-min">${feMinute}'</span><span>⚽ ${goal.scorer} ${flag} ${goal.team}</span>`;
+        document.getElementById('fe-log').prepend(row);
+      }
+      if (feMinute >= 90) {
+        clearInterval(feTimer);
+        document.getElementById('fe-clock').textContent = 'Full time!';
+        if (feScoreFra === feScoreEsp) {
+          setTimeout(runFEPenalties, 800);
+        } else {
+          setTimeout(() => showFEResult(feScoreFra > feScoreEsp ? 'France' : 'Spain', false), 800);
+        }
+      }
+    }, tickMs);
+  }
+
+  function runFEPenalties() {
+    document.getElementById('fe-clock').textContent = 'PENALTIES! 🎯';
+    const introRow = document.createElement('div');
+    introRow.className = 'event-row';
+    introRow.innerHTML = `<span class="event-min">90'</span><span>It's level after 90 minutes — straight to penalties!</span>`;
+    document.getElementById('fe-log').prepend(introRow);
+
+    let fraPens = 0, espPens = 0, round = 0;
+
+    const pensTimer = setInterval(() => {
+      round++;
+      const fraScored = Math.random() < 0.78;
+      const espScored = Math.random() < 0.78;
+      if (fraScored) fraPens++;
+      if (espScored) espPens++;
+      const prow = document.createElement('div');
+      prow.className = 'event-row';
+      prow.innerHTML = `<span class="event-min">P${round}</span><span>${feFlagFra} ${fraScored ? '✅' : '❌'} &nbsp;|&nbsp; ${feFlagEsp} ${espScored ? '✅' : '❌'}</span>`;
+      document.getElementById('fe-log').prepend(prow);
+      document.getElementById('fe-score').textContent = `${feScoreFra} (${fraPens}) – (${espPens}) ${feScoreEsp}`;
+
+      const decided = fraPens !== espPens;
+      if (round >= 5 && decided) {
+        clearInterval(pensTimer);
+        document.getElementById('fe-clock').textContent = 'Full time (after penalties)';
+        setTimeout(() => showFEResult(fraPens > espPens ? 'France' : 'Spain', true), 800);
+      } else if (round >= 5) {
+        clearInterval(pensTimer);
+        const winner = Math.random() < 0.5 ? 'France' : 'Spain';
+        document.getElementById('fe-clock').textContent = 'Full time (after penalties)';
+        setTimeout(() => showFEResult(winner, true), 800);
+      }
+    }, 700);
+  }
+
+  function showFEResult(winner, onPens) {
+    document.getElementById('fe-final').style.display = 'block';
+    document.getElementById('fe-pitch').style.display = 'none';
+    const flag = winner === 'France' ? feFlagFra : feFlagEsp;
+    document.getElementById('fe-verdict').innerHTML = `${flag} ${winner} win the World Cup!`;
+    const scoreline = onPens
+      ? `${feScoreFra}–${feScoreEsp} after 90 minutes, ${winner} win it on penalties`
+      : `Final score: France ${feScoreFra}–${feScoreEsp} Spain`;
+    document.getElementById('fe-verdict-sub').textContent = scoreline;
+  }
+
+  function resetFEMatch() {
+    if (feTimer) clearInterval(feTimer);
+    document.getElementById('fe-final').style.display = 'none';
+    document.getElementById('fe-pitch').style.display = 'block';
+    document.getElementById('fe-log').innerHTML = '';
+    document.getElementById('fe-score').textContent = '0 – 0';
+    document.getElementById('fe-clock').textContent = 'Kick-off awaits…';
+    const btn = document.getElementById('fe-kickoff-btn');
     btn.disabled = false;
     btn.style.display = 'inline-block';
   }
